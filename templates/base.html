@@ -14,20 +14,35 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/sse.js"></script>
+    <script>
+      window.addEventListener("someEvent", (e) => {
+        console.log(e);
+      });
+    </script>
   </head>
   <body class="w-full h-full m-0">
-    <div class="flex w-full h-full">
-      <main class="flex-grow-1">
+    <div
+      class="flex w-full h-full"
+      hx-ext="sse"
+      sse-connect="/sse"
+      hx-swap="afterbegin"
+    >
+      <main class="flex-grow-1 flex flex-col">
         <h2 class="text-center m-t-20">Naive Search Engine</h2>
         <div class="w-[70%] m-auto">
-          <input
-            type="text"
-            hx-get="/search?term="
-            hx-trigger="keyup changed delay:1s"
-          />
+          <input type="text" />
         </div>
+        <div
+          sse-swap="searchResult"
+          class="p-4 flex-grow-1 overflow-auto"
+        ></div>
       </main>
-      <div class="w-[30%] bg-blueGray h-full"></div>
+      <code
+        id="log"
+        sse-swap="addLog"
+        class="w-[30%] overflow-auto color-black p-4 bg-blueGray h-full"
+      ></code>
     </div>
   </body>
 </html>
