@@ -6,10 +6,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
 	"github.com/google/uuid"
-	"github.com/valyala/fasthttp"
 )
 
 // var allTemplates *template.Template
@@ -56,29 +57,52 @@ func main() {
 		Views: engine,
 	})
 
+	// app.Get("/sse", func(c *fiber.Ctx) error {
+	// 	c.Set("Content-Type", "text/event-stream")
+	// 	c.Set("Cache-Control", "no-cache")
+	// 	c.Set("Connection", "keep-alive")
+	// 	c.Set("Transfer-Encoding", "chunked")
+
+	// 	c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
+	// 		sub := NewSubscriber()
+	// 		subscribersList = append(subscribersList, sub)
+	// 		startSending(sub, w)
+	// 	}))
+
+	// 	return nil
+	// })
+
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			c.Next()
+			return nil
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	app.Get("/ws/:id", websocket.New(func(c *websocket.Conn) {
+		log.Println(c.Locals("allowed"))
+		log.Println(c.Params("id"))
+		log.Println(c.Query("v"))
+		log.Println(c.Cookies("session"))
+		for {
+			// run separate goroutines with channels for read/write
+			if mt, msg, err := c.ReadMessage(); err == nil {
+				spew.Print("Received", mt, string(msg))
+				if string(msg) == "marco" {
+					err := c.WriteMessage(websocket.TextMessage, []byte("polo"))
+					if err != nil {
+						spew.Printf("Failed to send ws message")
+					}
+				}
+			}
+		}
+	}))
+
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Render("base", nil)
 	})
-
-	app.Get("/sse", func(c *fiber.Ctx) error {
-		c.Set("Content-Type", "text/event-stream")
-		c.Set("Cache-Control", "no-cache")
-		c.Set("Connection", "keep-alive")
-		c.Set("Transfer-Encoding", "chunked")
-
-		c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
-			sub := NewSubscriber()
-			subscribersList = append(subscribersList, sub)
-			startSending(sub, w)
-		}))
-
-		return nil
-	})
-
-	// app.Get("/search", func(c *fiber.Ctx) error {
-	// 	term := c.Query("term")
-
-	// })
 
 	log.Fatal(app.Listen("localhost:3000"))
 }

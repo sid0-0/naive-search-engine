@@ -14,24 +14,16 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/sse.js"></script>
-    <script>
-      window.addEventListener("someEvent", (e) => {
-        console.log(e);
-      });
-    </script>
+    <script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/ws.js"></script>
   </head>
   <body class="w-full h-full m-0">
-    <div
-      class="flex w-full h-full"
-      hx-ext="sse"
-      sse-connect="/sse"
-      hx-swap="afterbegin"
-    >
+    <div class="flex w-full h-full" hx-ext="ws" ws-connect="/ws/chat">
       <main class="flex-grow-1 flex flex-col">
         <h2 class="text-center m-t-20">Naive Search Engine</h2>
         <div class="w-[70%] m-auto">
-          <input type="text" hx-get="temp" />
+          <form ws-send>
+            <input name="search" type="text" />
+          </form>
         </div>
         <div
           sse-swap="searchResult"
@@ -44,5 +36,19 @@
         class="w-[30%] overflow-auto color-black p-4 bg-blueGray h-full"
       ></code>
     </div>
+    <script defer>
+      window.addEventListener("someEvent", (e) => {
+        console.log(e);
+      });
+      document.body.addEventListener("htmx:wsOpen", function (evt) {
+        console.log("connected");
+      });
+      document.body.addEventListener("htmx:wsConnecting", function (evt) {
+        console.log("connecting");
+      });
+      document.body.addEventListener("htmx:wsClose", function (evt) {
+        console.log("disconnected");
+      });
+    </script>
   </body>
 </html>
