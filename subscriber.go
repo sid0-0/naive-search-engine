@@ -26,24 +26,26 @@ func NewSubscriber(c *websocket.Conn) *Subscriber {
 }
 
 func (sub *Subscriber) RunMessageChannels() {
-	// find a way to keep connection from auto closing!!!
-	// till then only this is th way
-	go sub.StartReading()
 	go sub.StartWriting()
-	for {
-	}
+	// run an infinite reading loop
+	// so that the connection does not close
+	// idk if that's ideal but whatever
+	sub.StartReadLoop()
 }
 
-func (sub *Subscriber) StartReading() {
+func (sub *Subscriber) StartReadLoop() {
 	for {
-		if mt, msg, err := sub.Connection.ReadMessage(); err == nil {
-			spew.Print("Received", mt, string(msg))
-			switch strings.TrimSpace(string(msg)) {
-			case "marco":
-				sub.WriteChannel <- "polo"
-			default:
-				sub.WriteChannel <- "did not understand"
-			}
+		mt, msg, err := sub.Connection.ReadMessage()
+		if err != nil {
+			spew.Print("Connection dropped because read failed")
+			return
+		}
+		spew.Print("Received", mt, string(msg))
+		switch strings.TrimSpace(string(msg)) {
+		case "marco":
+			sub.WriteChannel <- "polo"
+		default:
+			sub.WriteChannel <- "did not understand"
 		}
 	}
 }
