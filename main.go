@@ -6,30 +6,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
-	"github.com/google/uuid"
 )
 
 // var allTemplates *template.Template
 
 var SeedPages = []string{"https://www.wikipedia.org/"}
-
-type Subscriber struct {
-	Id            string
-	LogChannel    chan (string)
-	ResultChannel chan (string)
-}
-
-func NewSubscriber() *Subscriber {
-	return &Subscriber{
-		Id:            uuid.NewString(),
-		LogChannel:    make(chan string),
-		ResultChannel: make(chan string),
-	}
-}
 
 var subscribersList []*Subscriber
 
@@ -75,6 +59,7 @@ func main() {
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
+			c.Locals("expiration", 0)
 			c.Next()
 			return nil
 		}
@@ -82,22 +67,15 @@ func main() {
 	})
 
 	app.Get("/ws/:id", websocket.New(func(c *websocket.Conn) {
-		log.Println(c.Locals("allowed"))
-		log.Println(c.Params("id"))
-		log.Println(c.Query("v"))
-		log.Println(c.Cookies("session"))
-		for {
-			// run separate goroutines with channels for read/write
-			if mt, msg, err := c.ReadMessage(); err == nil {
-				spew.Print("Received", mt, string(msg))
-				if string(msg) == "marco" {
-					err := c.WriteMessage(websocket.TextMessage, []byte("polo"))
-					if err != nil {
-						spew.Printf("Failed to send ws message")
-					}
-				}
-			}
-		}
+		// log.Println(c.Locals("allowed"))
+		// log.Println(c.Params("id"))
+		// log.Println(c.Query("v"))
+		// log.Println(c.Cookies("session"))
+		log.Println(c.Cookies("expiration"))
+
+		sub := NewSubscriber(c)
+		subscribersList = append(subscribersList, sub)
+		sub.RunMessageChannels()
 	}))
 
 	app.Get("/", func(c *fiber.Ctx) error {
